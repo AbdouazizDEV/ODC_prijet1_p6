@@ -1,0 +1,10 @@
+abdouaziz passer123 0
+rokhaya passer123 0
+mamadou 123456 1
+fatoumata abcdef 1 
+moussa password1 0
+aicha secret123 1
+samba mypass123 0
+mariama 987654 1
+amadou 123abc 0
+kadiatou test456 0
