@@ -5,19 +5,22 @@
 #include<termios.h>
 #include<unistd.h>
 #include<stdbool.h>
+#include <time.h>
 
 #define Nom_user 50
 #define MDP_user 15
 #define taille 200
+#define Max_Etudiant 15
 
-typedef struct {
+/* typedef struct {
     char nom[Nom_user];
     char prenom[Nom_user];
     char mdp[MDP_user];
+    char matricula[Max_Etudiant];
     int age;
     int sexe;
     int id;
-} ETUDIANT_USER;
+} ETUDIANT_USER; */
 
 typedef struct  {
     char nom[Nom_user];
@@ -294,8 +297,29 @@ void connect(char *username, char *password) {
     } while (!connexion);
 }
 
+
+bool trouverNom(const char *username) {
+    FILE *file = fopen("listPresant.txt", "r");
+    if (file == NULL) {
+        printf("Erreur : Impossible d'ouvrir le fichier listPresant.txt.\n");
+        return false;
+    }
+
+    char line[taille];
+    while (fgets(line, sizeof(line), file) != NULL) {
+        char nom_utilisateur[Nom_user];
+        if (sscanf(line, "%s", nom_utilisateur) == 1) {
+            if ((strcmp(nom_utilisateur, username) == 0)) {
+                fclose(file);
+                return true;
+            }
+        }
+    }
+    fclose(file);
+    return false; // Aucune correspondance trouvée
+}
 //fontion ajouter vers la liste de presance 
-bool trouverNomUtilisateur(const char *mdp) {
+bool trouverNomUtilisateur(const char *matricule) {
     FILE *file = fopen("vigile.txt", "r");
     if (file == NULL) {
         printf("Erreur : Impossible d'ouvrir le fichier vigile.txt.\n");
@@ -304,11 +328,88 @@ bool trouverNomUtilisateur(const char *mdp) {
 
     char line[taille];
     while (fgets(line, sizeof(line), file) != NULL) {
-        char fileUsername[Nom_user], filePassword[MDP_user];
-        if (sscanf(line, "%s %s", fileUsername, filePassword) == 2) {
-            if (strcmp(filePassword, mdp) == 0) {
+        char nom[Nom_user], mdp[MDP_user], matricule_file[10];
+        int sexe, age, id;
+        if (sscanf(line, "%s %s %d %s %d %d", nom, mdp, &sexe, matricule_file, &age, &id) == 6) {
+            if ((strcmp(matricule_file, matricule) == 0)) {
                 fclose(file);
-                return ajouterPresence(fileUsername);
+                return ajouterPresence(nom, mdp, sexe, matricule_file, age, id);
+            }
+        }
+    }
+    fclose(file);
+    return false; // Aucune correspondance trouvée
+}
+
+bool ajouterPresence(const char *nom, const char *mdp, int sexe, const char *matricule, int age, int id) {
+    if (trouverNom(nom)) {
+        printf("Cet utilisateur est déjà présent.\n");
+        return false;
+    } else {
+        FILE *fp = fopen("listPresant.txt", "a");
+        if (fp != NULL) {
+            // Obtenir la date et l'heure actuelles
+            time_t t = time(NULL);
+            struct tm *tm = localtime(&t);
+            char timestamp[20];
+            strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", tm);
+
+            // Écrire toutes les informations de l'étudiant dans le fichier
+            fprintf(fp, "%s %s %d %s %d %d - Présent le %s\n", nom, mdp, sexe, matricule, age, id, timestamp);
+            fclose(fp);
+            printf("Présence ajoutée avec succès.\n");
+            return true;
+        } else {
+            printf("Erreur lors de l'ouverture du fichier.\n");
+            return false;
+        }
+    }
+}
+
+//marquer presence.
+bool marquerPresence(const char *username) {
+    FILE *fp = fopen("listPresant.txt", "a");
+    if (fp!= NULL) {
+        fprintf(fp, "%s\n", username);
+        fclose(fp);
+        printf("Présence marquée avec succès.\n");
+        return true;
+    } else {
+        printf("Erreur lors de l'ouverture du fichier.\n");
+        return false;
+    }
+}
+
+void MPresence(const char *username) {
+    if (trouverNom(username)) {
+        printf("Vous êtes déjà présent.\n");
+    } else {
+        FILE *fp = fopen("listPresant.txt", "a");
+        if (fp != NULL) {
+            fprintf(fp, "%s\n", username);
+            fclose(fp);
+            printf("Présence marquée avec succès.\n");
+        } else {
+            printf("Erreur lors de l'ouverture du fichier.\n");
+        }
+    }
+}
+
+bool verifPassword(const char *mdp) {
+    FILE *file = fopen("vigile.txt", "r");
+    if (file == NULL) {
+        printf("Erreur : Impossible d'ouvrir le fichier vigile.txt.\n");
+        return false;
+    }
+
+    char line[taille];
+    while (fgets(line, sizeof(line), file) != NULL) {
+        char nom_utilisateur[Nom_user], mdp_utilisateur[MDP_user];
+        if (sscanf(line, "%s %s", nom_utilisateur, mdp_utilisateur) == 2) {
+            if ((strcmp(mdp_utilisateur, mdp) == 0)) {
+                fclose(file);
+            
+                return true;
             }
         }
     }
@@ -317,15 +418,61 @@ bool trouverNomUtilisateur(const char *mdp) {
     return false; // Aucune correspondance trouvée
 }
 
-bool ajouterPresence(const char *username) {
-    FILE *fp = fopen("listPresant.txt", "a");
-    if (fp != NULL) {
-        fprintf(fp, "%s\n", username);
-        fclose(fp);
-        printf("Présence ajoutée avec succès.\n");
-        return true;
-    } else {
-        printf("Erreur lors de l'ouverture du fichier.\n");
-        return false;
+void connect2( char *password) {
+    bool connexion;
+
+    do {
+     
+        printf("Entrer le matricule l'etudiant :\n ");
+        
+        int i = 0;
+        char c;
+        while (i < MDP_user - 1 && (c = getch()) != '\n') {
+            password[i++] = c;
+            printf("*");
+        }
+        password[i] = '\0';
+        printf("\n");
+       /*  connexion = Authentification(username, password, "vigile.txt"); */
+
+        
+    } while (!connexion);
+}
+
+//++++++++++++++++++++++++++++++++++++++++++++++++
+void dessinerTableau(const char *filename) {
+    FILE *fp_in = fopen(filename, "r");
+    FILE *fp_out = fopen("tableau.txt", "w");
+
+    if (fp_in == NULL || fp_out == NULL) {
+        printf("Erreur lors de l'ouverture des fichiers.\n");
+        return;
     }
+
+    // Dessiner la ligne horizontale supérieure
+    fprintf(fp_out, "┌──────────┬───────────────────┬───────────────────┬──────────┬───────────────┬──────────┬────────────┐\n");
+
+    // En-têtes des colonnes
+    fprintf(fp_out, "│ %-8s │ %-17s │ %-17s │ %-8s │ %-13s │ %-8s │ %-10s │\n", "Heure", "Utilisateur", "Mot de passe", "Sexe", "Matricule", "Age", "Identifiant");
+
+    // Dessiner la ligne de séparation entre les en-têtes et les données
+    fprintf(fp_out, "├──────────┼───────────────────┼───────────────────┼──────────┼───────────────┼──────────┼────────────┤\n");
+
+    char line[100];
+    while (fgets(line, sizeof(line), fp_in)) {
+        // Remplacer les sauts de ligne par des espaces
+        char *pos;
+        if ((pos = strchr(line, '\n')) != NULL) {
+            *pos = ' ';
+        }
+        // Afficher les données
+        fprintf(fp_out, "│ %-8s │ %-17s │ %-17s │ %-8s │ %-13s │ %-8s │ %-10s │\n", line, "", "", "", "", "", "");
+    }
+
+    // Dessiner la ligne horizontale inférieure
+    fprintf(fp_out, "└──────────┴───────────────────┴───────────────────┴──────────┴───────────────┴──────────┴────────────┘\n");
+
+    fclose(fp_in);
+    fclose(fp_out);
+    printf("Le tableau a été dessiné avec succès dans le fichier tableau.txt.\n");
 }

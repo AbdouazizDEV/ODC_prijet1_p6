@@ -1,83 +1,103 @@
 #include <stdio.h>
-#include <string.h>
 #include <stdbool.h>
 #include "projet1F.c"
-
-int main(){
-
+#include <stdlib.h>
+#include <termios.h>
+#include <unistd.h>
+  
+int main() {
     char username[Nom_user];
     char password[MDP_user], ch;
-    int rep,cpt=0;
-
+    char matricule[Max_Etudiant];
+    int rep, cpt = 0,i;
+do
+{
     connect(username, password);
 
     printf("\nAuthentification réussie !\n");
-    // Vérifier si le fichier de données existe
-    // Authentifier l'utilisateur
-    if (Authentification(username,password,"vigile.txt")) {
-        if (!verify_id_ETU(username,password,"vigile.txt")) {
 
+    if (Authentification(username, password, "vigile.txt")) {
+        if (!verify_id_ETU(username, password, "vigile.txt")) {
             printf("Vous êtes administrateur\n");
-            do
-            {
+            do {
                 rep = menuadmin();
-                switch (rep)
-                {
+                switch (rep) {
                     case 1:
-                        //appelle fonction GESTION DES ÉTUDIANTS
+                        
+                        // Appeler la fonction GESTION DES ÉTUDIANTS
                         break;
                     case 2:
-                        //appelle fonction GÉNÉRATION DE fichier
+                          dessinerTableau("listPresant.txt");
+                        // Appeler la fonction GÉNÉRATION DE fichier
                         break;
                     case 3:
                         do
                         {
-                            printf("donnez le mot de passe\n");
-                            scanf("%s", password);
-                        } while (!trouverNomUtilisateur(password));
+                            do {
+                                if (cpt == 1) {
+                                    break;
+                                } else {
+                                    
+                                    cpt = cpt + 1;
+                                }
+                                printf("Veuillez saisir la matricule de l'etudiant:\n");
+                                scanf("%s", matricule);
+                            } while (!trouverNomUtilisateur(matricule));
+
+                            rep = menuadmin();    
+                        } while (rep < 1 || rep > 5);
+                        
+                        
                         break;
                     case 4:
-                        // appelle fonction ENVOYER UN MESSAGE
+                        // Appeler la fonction ENVOYER UN MESSAGE
                         break;
                     case 5:
-                        // appelle fonction 
+                        // Appeler la fonction
                         break;
                     default:
-                        printf("choisisez un entier sur le menu\n");
+                        printf("choisissez un entier sur le menu\n");
                 }
-                
-                printf("tappez q ou Q pour quitter\n");
+
+                printf("tapez q ou Q pour quitter\n");
                 scanf(" %c", &ch);
-                
+                if (ch == 'q' || ch == 'Q') {
+                    printf("donnez le mot de passe admin\n");
+                    printf("Entrer votre mot de passe : \n");
+                    
+                    if (!verifPassword(password)) {
+                        break;
+                    } else {
+                        continue;
+                    }
+                }
             } while (ch != 'q' && ch != 'Q');
         } else {
             printf("Vous êtes étudiant\n");
-            do
-            {
-                rep=menuETUDIANT();
-                switch (rep)
-                {
+            do {
+                rep = menuETUDIANT();
+                switch (rep) {
                     case 1:
-                        // appelle fonction MARQUER MA PRÉSENCE
+                        MPresence(username);
+                        // Appeler la fonction MARQUER MA PRÉSENCE
                         break;
                     case 2:
-                        // appelle fonction NOMBRE DE MINUTES D’ABSENCE
+                        // Appeler la fonction NOMBRE DE MINUTES D’ABSENCE
                         break;
                     case 3:
-                        // appelle fonction MES MESSAGES (0)
+                        // Appeler la fonction MES MESSAGES (0)
                         break;
                     case 4:
-                        // appelle fonction DECONNEXION
+                        // Appeler la fonction DECONNEXION
                         break;
                     default:
-                        printf("choisisez un entier sur le menu\n");
+                        printf("choisissez un entier sur le menu\n");
                 }
-            } while (rep<1 || rep>4);   
+            } while (rep < 1 || rep > 4);
         }
     } else {
         printf("Erreur : Nom d'utilisateur ou mot de passe incorrect.\n");
-
-    } 
-
+    }
+} while (ch=='q'||ch=='Q');
     return 0;
 }
