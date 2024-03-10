@@ -11,6 +11,8 @@
 #define MDP_user 15
 #define taille 200
 #define Max_Etudiant 15
+#define MAX_LINE_LENGTH 1000
+#define MAX_STUDENTS 100
 
 /* typedef struct {
     char nom[Nom_user];
@@ -351,11 +353,13 @@ bool ajouterPresence(const char *nom, const char *mdp, int sexe, const char *mat
             // Obtenir la date et l'heure actuelles
             time_t t = time(NULL);
             struct tm *tm = localtime(&t);
-            char timestamp[20];
-            strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", tm);
+            char date[11];
+            char heure[9];
+            strftime(heure, sizeof(heure), "%H:%M:%S", tm);
+            strftime(date, sizeof(date), "%d/%m/%Y", tm);
 
             // Écrire toutes les informations de l'étudiant dans le fichier
-            fprintf(fp, "%s %s %d %s %d %d - Présent le %s\n", nom, mdp, sexe, matricule, age, id, timestamp);
+            fprintf(fp, "%s %s %d %s %d %d %s  %s\n", nom, mdp, sexe, matricule, age, id, heure, date);
             fclose(fp);
             printf("Présence ajoutée avec succès.\n");
             return true;
@@ -440,6 +444,20 @@ void connect2( char *password) {
 }
 
 //++++++++++++++++++++++++++++++++++++++++++++++++
+
+// menu de geration de fichier des presentes
+int menu_fichier_present(){
+    int choix;
+    
+    printf("••••••••••••••••••••• MENU ••••••••••••••••••••••\n");
+    printf("1 → liste de presant\n");
+    printf("2 → liste de presence par date\n");
+    printf("•••••••••••••••••••••••••••••••••••••••••••••\n");
+    printf("Votre choix : ");
+    scanf("%d", &choix);
+    return choix;
+}
+
 void dessinerTableau(const char *filename) {
     FILE *fp_in = fopen(filename, "r");
     FILE *fp_out = fopen("tableau.txt", "w");
@@ -450,29 +468,124 @@ void dessinerTableau(const char *filename) {
     }
 
     // Dessiner la ligne horizontale supérieure
-    fprintf(fp_out, "┌──────────┬───────────────────┬───────────────────┬──────────┬───────────────┬──────────┬────────────┐\n");
+    fprintf(fp_out, "┌──────────┬───────────────────┬───────────────────┬───────┬─────────────┬─────┬───────┐\n");
 
     // En-têtes des colonnes
-    fprintf(fp_out, "│ %-8s │ %-17s │ %-17s │ %-8s │ %-13s │ %-8s │ %-10s │\n", "Heure", "Utilisateur", "Mot de passe", "Sexe", "Matricule", "Age", "Identifiant");
+    fprintf(fp_out, "│ Heure    │ Utilisateur       │ Mot de passe       │ Sexe  │ Matricule   │ Age │ ID    │\n");
 
     // Dessiner la ligne de séparation entre les en-têtes et les données
-    fprintf(fp_out, "├──────────┼───────────────────┼───────────────────┼──────────┼───────────────┼──────────┼────────────┤\n");
+    fprintf(fp_out, "├──────────┼───────────────────┼───────────────────┼───────┼─────────────┼─────┼───────┤\n");
 
-    char line[100];
-    while (fgets(line, sizeof(line), fp_in)) {
-        // Remplacer les sauts de ligne par des espaces
-        char *pos;
-        if ((pos = strchr(line, '\n')) != NULL) {
-            *pos = ' ';
-        }
-        // Afficher les données
-        fprintf(fp_out, "│ %-8s │ %-17s │ %-17s │ %-8s │ %-13s │ %-8s │ %-10s │\n", line, "", "", "", "", "", "");
+    char ligne[100];
+    char heure[20], utilisateur[50], mdp[20], sexe[10], matricule[15], age[5], id[5];
+
+    while (fgets(ligne, sizeof(ligne), fp_in) != NULL) {
+        // Extraire les informations de l'étudiant de la ligne
+        sscanf(ligne, "%s %s %s %s %s %s %s", utilisateur, mdp, sexe, matricule, age, id, heure);
+
+        // Afficher les données de l'étudiant dans une nouvelle ligne du tableau
+        fprintf(fp_out, "│ %-8s │ %-17s │ %-17s │ %-5s │ %-11s │ %-4s │ %-5s │\n", heure, utilisateur, mdp, sexe, matricule, age, id);
     }
 
     // Dessiner la ligne horizontale inférieure
-    fprintf(fp_out, "└──────────┴───────────────────┴───────────────────┴──────────┴───────────────┴──────────┴────────────┘\n");
+    fprintf(fp_out, "└──────────┴───────────────────┴───────────────────┴───────┴─────────────┴─────┴───────┘\n");
 
     fclose(fp_in);
     fclose(fp_out);
     printf("Le tableau a été dessiné avec succès dans le fichier tableau.txt.\n");
 }
+
+void demanderDate(char *date) {
+    printf("Veuillez saisir une date au format français (jour/mois/année) : \n");
+    fgets(date, 11, stdin);
+    // Supprimer le caractère de nouvelle ligne s'il est présent
+    if (date[strlen(date) - 1] == '\n') {
+        date[strlen(date) - 1] = '\0';
+    }
+}
+void dessinerTableauDate(const char *filename, const char *date) {
+    FILE *fp_in = fopen(filename, "r");
+    FILE *fp_out = fopen("tableauDate.txt", "w");
+
+    if (fp_in == NULL || fp_out == NULL) {
+        printf("Erreur lors de l'ouverture des fichiers.\n");
+        return;
+    }
+
+    // Écrire la date fournie par l'utilisateur dans le fichier de sortie
+    fprintf(fp_out, "Liste des étudiants présents le %s :\n", date);
+
+    // Dessiner la ligne horizontale supérieure
+    fprintf(fp_out, "┌───────────────────┬───────────────────┬───────┬─────────────┬─────┬───────┬──────────┐\n");
+
+    // En-têtes des colonnes
+    fprintf(fp_out, "│ Utilisateur       │ Mot de passe      │ Sexe  │ Matricule   │ Age │ ID    │ Heure    │\n");
+
+    // Dessiner la ligne de séparation entre les en-têtes et les données
+    fprintf(fp_out, "├───────────────────┼───────────────────┼───────┼─────────────┼─────────────┼──────────┤\n");
+
+    char line[MAX_LINE_LENGTH];
+    char utilisateur[20], mdp[20], sexe[5], matricule[10], age[5], id[5], heure[10], current_date[20];
+    int items_read;
+
+    while (fgets(line, sizeof(line), fp_in)) {
+        // Lire les données de la ligne
+        items_read = sscanf(line, "%s %s %s %s %s %s %s %s", utilisateur, mdp, sexe, matricule, age, id, heure, current_date);
+
+        // Vérifier si les données ont été lues avec succès et si la date correspond
+        if (items_read == 8 && strcmp(current_date, date) == 0) {
+            // Afficher les données dans les colonnes correspondantes
+            fprintf(fp_out, "│ %-17s │ %-17s │ %-5s │ %-11s │ %-3s │ %-5s │ %-8s │\n", utilisateur, mdp, sexe, matricule, age, id, heure);
+        }
+    }
+
+    // Dessiner la ligne horizontale inférieure
+    fprintf(fp_out, "└───────────────────┴───────────────────┴───────┴─────────────┴─────┴───────┴──────────┘\n");
+
+    fclose(fp_in);
+    fclose(fp_out);
+    printf("Le tableau a été dessiné avec succès dans le fichier tableauDate.txt.\n");
+}
+//control de date saisie
+bool estAnneeBissextile(int annee) {
+    return (annee % 4 == 0 && annee % 100 != 0) || (annee % 400 == 0);
+}
+
+bool estDateValide(int jour, int mois, int annee) {
+    if (mois < 1 || mois > 12) return false;
+
+    int joursDansLeMois;
+    switch (mois) {
+        case 4:
+        case 6:
+        case 9:
+        case 11:
+            joursDansLeMois = 30;
+            break;
+        case 2:
+            joursDansLeMois = estAnneeBissextile(annee) ? 29 : 28;
+            break;
+        default:
+            joursDansLeMois = 31;
+    }
+
+    return jour >= 1 && jour <= joursDansLeMois;
+}
+
+bool estDateFrancaiseValide(const char *date) {
+    int jour, mois, annee;
+    if (sscanf(date, "%d/%d/%d", &jour, &mois, &annee) != 3) {
+        return false; // Mauvais format de saisie
+    }
+    return estDateValide(jour, mois, annee);
+}
+
+void saisirDateFrancaise(char *date) {
+    printf("Veuillez saisir une date au format français (jour/mois/année) :\n ");
+    scanf("%s", date);
+    while (!estDateFrancaiseValide(date)) {
+        printf("Format de date incorrect.\n Veuillez saisir une date valide au format français (jour/mois/année) : \n");
+        scanf("%s", date);
+    }
+}
+

@@ -9,7 +9,7 @@ int main() {
     char username[Nom_user];
     char password[MDP_user], ch;
     char matricule[Max_Etudiant];
-    int rep, cpt = 0,i;
+    int rep, cpt = 0,i,f;
 do
 {
     connect(username, password);
@@ -20,32 +20,52 @@ do
         if (!verify_id_ETU(username, password, "vigile.txt")) {
             printf("Vous êtes administrateur\n");
             do {
+                cpt = 0;
                 rep = menuadmin();
                 switch (rep) {
                     case 1:
                         
                         // Appeler la fonction GESTION DES ÉTUDIANTS
                         break;
-                    case 2:
-                          dessinerTableau("listPresant.txt");
-                        // Appeler la fonction GÉNÉRATION DE fichier
+                    case 2:// Appeler la fonction GÉNÉRATION DE fichier
+                            
+                           do
+                           {
+                                 f=menu_fichier_present();
+                                if (f==1) 
+                                {
+                                    dessinerTableau("listPresant.txt");
+                                }else
+                                {
+                                     const char *filename = "listPresant.txt";
+                                     char *date; // Changez cette valeur pour la date que vous souhaitez utiliser
+                                    saisirDateFrancaise(date);
+                                    dessinerTableauDate(filename, date);
+                                }
+                                if (f!=1 || f!=2) 
+                                {
+                                    break;
+                                }
+                                
+                           } while (f!=1 || f!=2);
+                            
                         break;
                     case 3:
                         do
-                        {
+                        {   
+                            if (rep==5)
+                            {
+                                break;
+                            }
+                            
+                            rep = menuadmin(); 
                             do {
-                                if (cpt == 1) {
-                                    break;
-                                } else {
-                                    
-                                    cpt = cpt + 1;
-                                }
+                                
                                 printf("Veuillez saisir la matricule de l'etudiant:\n");
                                 scanf("%s", matricule);
                             } while (!trouverNomUtilisateur(matricule));
-
-                            rep = menuadmin();    
-                        } while (rep < 1 || rep > 5);
+                            
+                        } while (rep >=1 && rep < 5);
                         
                         
                         break;

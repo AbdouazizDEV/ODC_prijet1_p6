@@ -36,4 +36,6 @@ bool verifPassword(const char *mdp) ;
 void connect2( char *password);
 void MPresence(const char *username);
 
+int menu_fichier_present();
+void dessinerTableauDate(const char *filename, const char *date) ;
 #endif /* PROJET1F_H */
