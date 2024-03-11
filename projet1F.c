@@ -7,12 +7,13 @@
 #include<stdbool.h>
 #include <time.h>
 
-#define Nom_user 50
-#define MDP_user 15
-#define taille 200
 #define Max_Etudiant 15
 #define MAX_LINE_LENGTH 1000
 #define MAX_STUDENTS 100
+
+#define taille 100 // Définir la taille maximum des chaînes
+#define Nom_user 50 // Définir la taille maximum du nom d'utilisateur
+#define MDP_user 20 // Définir la taille maximum du mot de passe
 
 /* typedef struct {
     char nom[Nom_user];
@@ -23,7 +24,6 @@
     int sexe;
     int id;
 } ETUDIANT_USER; */
-
 typedef struct  {
     char nom[Nom_user];
     char prenom[Nom_user];
@@ -298,7 +298,8 @@ void connect(char *username, char *password) {
         }
     } while (!connexion);
 }
-
+bool trouverNom(const char *username);
+bool ajouterPresence(const char *nom, const char *mdp, int sexe, const char *matricule, int age, int id);
 
 bool trouverNom(const char *username) {
     FILE *file = fopen("listPresant.txt", "r");
@@ -320,7 +321,54 @@ bool trouverNom(const char *username) {
     fclose(file);
     return false; // Aucune correspondance trouvée
 }
-//fontion ajouter vers la liste de presance 
+
+bool ajouterPresence(const char *nom, const char *mdp, int sexe, const char *matricule, int age, int id) {
+    FILE *fp = fopen("listPresant.txt", "a"); // Mode "a" pour ajouter à la fin du fichier
+    if (fp == NULL) {
+        printf("Erreur : Impossible d'ouvrir le fichier listPresant.txt.\n");
+        return false;
+    }
+
+    // Obtenir la date et l'heure actuelles
+    time_t t = time(NULL);
+    struct tm *tm = localtime(&t);
+    char date[11];
+    char heure[9];
+    strftime(heure, sizeof(heure), "%H:%M:%S", tm);
+    strftime(date, sizeof(date), "%d/%m/%Y", tm);
+
+    // Écrire toutes les informations de l'étudiant dans le fichier
+    fprintf(fp, "%s %s %d %s %d %d %s %s\n", nom, mdp, sexe, matricule, age, id, heure, date);
+    fclose(fp);
+    printf("Présence ajoutée avec succès.\n");
+    return true;
+}
+bool estDejaPresent(const char *matricule) {
+    FILE *file = fopen("listPresant.txt", "r");
+    if (file == NULL) {
+        printf("Erreur : Impossible d'ouvrir le fichier listPresant.txt.\n");
+        return false;
+    }
+
+    char line[taille];
+    while (fgets(line, sizeof(line), file) != NULL) {
+        char matricule_etudiant[20], date[taille];
+        if (sscanf(line, "%*s %*s %*d %s %*d %*d %*s %s", matricule_etudiant, date) == 2) {
+            time_t now;
+            time(&now);
+            struct tm *local = localtime(&now);
+            char today[taille];
+            strftime(today, sizeof(today), "%d/%m/%Y", local);
+            if (strcmp(matricule_etudiant, matricule) == 0 && strcmp(date, today) == 0) {
+                fclose(file);
+                return true; // L'étudiant est déjà présent aujourd'hui
+            }
+        }
+    }
+    fclose(file);
+    return false; // L'étudiant n'est pas déjà présent aujourd'hui
+}
+//fontion ajouter vers la liste de presance
 bool trouverNomUtilisateur(const char *matricule) {
     FILE *file = fopen("vigile.txt", "r");
     if (file == NULL) {
@@ -330,45 +378,27 @@ bool trouverNomUtilisateur(const char *matricule) {
 
     char line[taille];
     while (fgets(line, sizeof(line), file) != NULL) {
-        char nom[Nom_user], mdp[MDP_user], matricule_file[10];
+        char nom[50], mdp[20], matricule_file[20];
         int sexe, age, id;
         if (sscanf(line, "%s %s %d %s %d %d", nom, mdp, &sexe, matricule_file, &age, &id) == 6) {
-            if ((strcmp(matricule_file, matricule) == 0)) {
+            if (strcmp(matricule_file, matricule) == 0) {
                 fclose(file);
-                return ajouterPresence(nom, mdp, sexe, matricule_file, age, id);
+                if (!estDejaPresent(matricule)) {
+                    return ajouterPresence(nom, mdp, sexe, matricule_file, age, id);
+                } else {
+                    printf("L'étudiant est déjà présent aujourd'hui.\n");
+                    return false;
+                }
             }
         }
     }
     fclose(file);
-    return false; // Aucune correspondance trouvée
+    printf("L'étudiant avec le matricule %s n'a pas été trouvé.\n", matricule);
+    return false;
 }
+// Déclaration des fonctions pour éviter les erreurs de "implicit declaration"
 
-bool ajouterPresence(const char *nom, const char *mdp, int sexe, const char *matricule, int age, int id) {
-    if (trouverNom(nom)) {
-        printf("Cet utilisateur est déjà présent.\n");
-        return false;
-    } else {
-        FILE *fp = fopen("listPresant.txt", "a");
-        if (fp != NULL) {
-            // Obtenir la date et l'heure actuelles
-            time_t t = time(NULL);
-            struct tm *tm = localtime(&t);
-            char date[11];
-            char heure[9];
-            strftime(heure, sizeof(heure), "%H:%M:%S", tm);
-            strftime(date, sizeof(date), "%d/%m/%Y", tm);
 
-            // Écrire toutes les informations de l'étudiant dans le fichier
-            fprintf(fp, "%s %s %d %s %d %d %s  %s\n", nom, mdp, sexe, matricule, age, id, heure, date);
-            fclose(fp);
-            printf("Présence ajoutée avec succès.\n");
-            return true;
-        } else {
-            printf("Erreur lors de l'ouverture du fichier.\n");
-            return false;
-        }
-    }
-}
 
 //marquer presence.
 bool marquerPresence(const char *username) {
@@ -588,4 +618,8 @@ void saisirDateFrancaise(char *date) {
         scanf("%s", date);
     }
 }
-
+void clearScreen() {
+    // Utilise une commande système pour effacer l'écran
+    printf("\033[2J\033[1;1H"); // Cette séquence est spécifique à UNIX/Linux
+    // Pour Windows, vous pouvez utiliser "system("cls");"
+}

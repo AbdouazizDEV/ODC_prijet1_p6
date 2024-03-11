@@ -2,8 +2,10 @@
 #define PROJET1F_H
 #include<stdbool.h>
 
-#define Nom_user 50
-#define MDP_user 15
+#define taille 100 // Définir la taille maximum des chaînes
+#define Nom_user 50 // Définir la taille maximum du nom d'utilisateur
+#define MDP_user 20 // Définir la taille maximum du mot de passe
+
 #define Max_Etudiant 15
 
 typedef struct {
